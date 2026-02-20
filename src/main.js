@@ -16,7 +16,7 @@ script.onload = () => {
     const container = document.getElementById('map')
     const options = {
       center: new kakao.maps.LatLng(36.3550, 127.3880),
-      level: 3,
+      level: 7, // 🔥 확대레벨 높임 (움직임 눈에 보이게)
     }
 
     const map = new kakao.maps.Map(container, options)
@@ -34,8 +34,11 @@ script.onload = () => {
         if (!data?.latitude) return
 
         const pos = new kakao.maps.LatLng(Number(data.latitude), Number(data.longitude))
+
         marker.setPosition(pos)
-        map.setCenter(pos)
+
+        // 🔥 부드럽게 이동 (핵심)
+        map.panTo(pos)
 
       } catch (e) {
         console.log('위치못가져옴')
