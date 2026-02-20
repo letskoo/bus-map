@@ -1,24 +1,49 @@
 import './style.css'
-import javascriptLogo from './javascript.svg'
-import viteLogo from '/vite.svg'
-import { setupCounter } from './counter.js'
+
+const routeId = 1
 
 document.querySelector('#app').innerHTML = `
-  <div>
-    <a href="https://vite.dev" target="_blank">
-      <img src="${viteLogo}" class="logo" alt="Vite logo" />
-    </a>
-    <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript" target="_blank">
-      <img src="${javascriptLogo}" class="logo vanilla" alt="JavaScript logo" />
-    </a>
-    <h1>Hello Vite!</h1>
-    <div class="card">
-      <button id="counter" type="button"></button>
-    </div>
-    <p class="read-the-docs">
-      Click on the Vite logo to learn more
-    </p>
-  </div>
+<div id="map" style="width:100%;height:100vh;"></div>
 `
 
-setupCounter(document.querySelector('#counter'))
+const script = document.createElement('script')
+script.src = "//dapi.kakao.com/v2/maps/sdk.js?appkey=7760a4557ccbf1f9dd40e051124ba1fc&autoload=false"
+document.head.appendChild(script)
+
+script.onload = () => {
+  kakao.maps.load(() => {
+
+    const container = document.getElementById('map')
+    const options = {
+      center: new kakao.maps.LatLng(36.3550, 127.3880),
+      level: 3,
+    }
+
+    const map = new kakao.maps.Map(container, options)
+
+    const marker = new kakao.maps.Marker({
+      position: options.center,
+      map,
+    })
+
+    async function fetchBus() {
+      try {
+        const res = await fetch(`https://bus-server-production.up.railway.app/driver/location?routeId=${routeId}`)
+        const data = await res.json()
+
+        if (!data) return
+
+        const pos = new kakao.maps.LatLng(data.latitude, data.longitude)
+        marker.setPosition(pos)
+        map.setCenter(pos)
+
+      } catch (e) {
+        console.log('fetch error')
+      }
+    }
+
+    fetchBus()
+    setInterval(fetchBus, 2000)
+
+  })
+}
