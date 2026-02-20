@@ -28,7 +28,7 @@ script.onload = () => {
 
     async function fetchBus() {
       try {
-        const res = await fetch(`https://bus-server-production.up.railway.app/driver/location?routeId=${routeId}`)
+        const res = await fetch(`https://bus-server-production.up.railway.app/driver/location/${routeId}`)
         const data = await res.json()
 
         if (!data) return
