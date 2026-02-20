@@ -2,10 +2,16 @@ import './style.css'
 
 console.log("MAIN JS 실행됨")
 
+// 🔥 화면 높이 강제
+document.body.style.margin="0"
+document.body.style.padding="0"
+document.body.style.height="100vh"
+document.documentElement.style.height="100vh"
+
 const routeId = 1
 
 document.querySelector('#app').innerHTML = `
-<div id="map" style="width:100%;height:100vh;"></div>
+<div id="map" style="width:100vw;height:100vh;background:#eee;"></div>
 `
 
 // 🔥 카카오 SDK 로드
@@ -14,9 +20,8 @@ script.src = "https://dapi.kakao.com/v2/maps/sdk.js?appkey=7760a4557ccbf1f9dd40e
 script.defer = true
 document.head.appendChild(script)
 
-// 🔥 로딩 실패 체크
 script.onerror = () => {
-  console.log("카카오SDK 로드 실패 (도메인 or 키 문제)")
+  console.log("카카오SDK 로드 실패")
 }
 
 script.onload = () => {
@@ -34,7 +39,7 @@ script.onload = () => {
 
     const options = {
       center: new kakao.maps.LatLng(36.3550,127.3880),
-      level: 4,
+      level: 5,
     }
 
     const map = new kakao.maps.Map(container, options)
@@ -53,7 +58,6 @@ script.onload = () => {
 
         const lat = Number(data.latitude)
         const lng = Number(data.longitude)
-
         if(isNaN(lat) || isNaN(lng)) return
 
         const pos = new kakao.maps.LatLng(lat,lng)
