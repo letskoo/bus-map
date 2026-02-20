@@ -28,17 +28,18 @@ script.onload = () => {
 
     async function fetchBus() {
       try {
-        const res = await fetch(`https://bus-server-production.up.railway.app/driver/location/${routeId}?t=${Date.now()}`)
+        // 🔥 Vercel 프록시 경유 (CORS 완전 차단 해결)
+        const res = await fetch(`/api/location?routeId=${routeId}&t=${Date.now()}`)
         const data = await res.json()
 
-        if (!data) return
+        if (!data || !data.latitude) return
 
-        const pos = new kakao.maps.LatLng(data.latitude, data.longitude)
+        const pos = new kakao.maps.LatLng(Number(data.latitude), Number(data.longitude))
         marker.setPosition(pos)
         map.setCenter(pos)
 
       } catch (e) {
-        console.log('fetch error')
+        console.log('위치못가져옴')
       }
     }
 
