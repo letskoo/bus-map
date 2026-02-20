@@ -8,14 +8,20 @@ document.querySelector('#app').innerHTML = `
 <div id="map" style="width:100%;height:100vh;"></div>
 `
 
-// 🔥 카카오 SDK 강제 로드
+// 🔥 카카오 SDK 로드
 const script = document.createElement('script')
 script.src = "https://dapi.kakao.com/v2/maps/sdk.js?appkey=7760a4557ccbf1f9dd40e051124ba1fc&autoload=false"
+script.defer = true
 document.head.appendChild(script)
+
+// 🔥 로딩 실패 체크
+script.onerror = () => {
+  console.log("카카오SDK 로드 실패 (도메인 or 키 문제)")
+}
 
 script.onload = () => {
 
-  if (!window.kakao) {
+  if (!window.kakao || !window.kakao.maps) {
     console.log("카카오SDK 실패")
     return
   }
@@ -28,7 +34,7 @@ script.onload = () => {
 
     const options = {
       center: new kakao.maps.LatLng(36.3550,127.3880),
-      level: 3,
+      level: 4,
     }
 
     const map = new kakao.maps.Map(container, options)
@@ -43,12 +49,19 @@ script.onload = () => {
         const res = await fetch(`/api/location?routeId=${routeId}&t=${Date.now()}`)
         const data = await res.json()
 
-        if(!data?.latitude) return
+        if(!data || !data.latitude) return
 
-        const pos = new kakao.maps.LatLng(Number(data.latitude),Number(data.longitude))
+        const lat = Number(data.latitude)
+        const lng = Number(data.longitude)
+
+        if(isNaN(lat) || isNaN(lng)) return
+
+        const pos = new kakao.maps.LatLng(lat,lng)
 
         marker.setPosition(pos)
         map.panTo(pos)
+
+        console.log("버스이동:",lat,lng)
 
       }catch(e){
         console.log("위치못가져옴")
