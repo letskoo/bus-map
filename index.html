@@ -1,70 +1,14 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
-<title>버스 실시간 위치</title>
-
-<script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=7760a4557ccbf1f9dd40e051124ba1fc&autoload=false"></script>
-
-<style>
-html, body{
-  margin:0;
-  padding:0;
-  height:100%;
-}
-#map{
-  width:100%;
-  height:100vh;
-}
-</style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>버스 위치</title>
 </head>
 
 <body>
-<div id="map"></div>
+<div id="app"></div>
 
-<script>
-kakao.maps.load(function(){
-
-const SERVER="https://bus-server-production.up.railway.app";
-const ROUTE_ID=1;
-
-const container=document.getElementById("map");
-
-const options={
-  center:new kakao.maps.LatLng(36.3504,127.3845),
-  level:3
-};
-
-const map=new kakao.maps.Map(container,options);
-
-const marker=new kakao.maps.Marker({
-  position:options.center
-});
-marker.setMap(map);
-
-async function fetchBus(){
-
-  try{
-    const res=await fetch(SERVER+"/driver/location/"+ROUTE_ID);
-    const data=await res.json();
-
-    if(!data || !data.latitude) return;
-
-    const pos=new kakao.maps.LatLng(data.latitude,data.longitude);
-
-    marker.setPosition(pos);
-    map.setCenter(pos);
-
-  }catch(e){
-    console.log("위치못가져옴");
-  }
-}
-
-fetchBus();
-setInterval(fetchBus,2000);
-
-});
-</script>
-
+<script type="module" src="/src/main.js"></script>
 </body>
 </html>
