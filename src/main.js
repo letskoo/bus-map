@@ -1,3 +1,4 @@
+console.log("MAIN JS 실행됨");
 import './style.css'
 
 const routeId = 1
