@@ -4,14 +4,13 @@
 <meta charset="UTF-8">
 <title>버스 위치</title>
 
-<script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=7760a4557ccbf1f9dd40e051124ba1fc"></script>
+<script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=7760a4557ccbf1f9dd40e051124ba1fc&autoload=false"></script>
 
 <style>
-html,body{
+html, body{
 margin:0;
 padding:0;
 height:100%;
-background:#000;
 }
 #map{
 width:100%;
@@ -25,41 +24,49 @@ height:100vh;
 <div id="map"></div>
 
 <script>
-const SERVER="https://bus-server-production.up.railway.app";
+kakao.maps.load(function(){
 
-const container=document.getElementById("map");
+const mapContainer = document.getElementById("map");
 
-const options={
-center:new kakao.maps.LatLng(36.3504,127.3845),
+const mapOption = {
+center: new kakao.maps.LatLng(36.3504,127.3845),
 level:3
 };
 
-const map=new kakao.maps.Map(container,options);
+const map = new kakao.maps.Map(mapContainer, mapOption);
 
-const marker=new kakao.maps.Marker({
-position:options.center
+const marker = new kakao.maps.Marker({
+position: mapOption.center
 });
 marker.setMap(map);
 
-// 🔥 실시간 위치 반영
-async function update(){
+// ⭐ 서버 주소
+const SERVER="https://bus-server-production.up.railway.app";
+
+// ⭐ routeId (노선번호)
+const ROUTE_ID=1;
+
+// ⭐ 2초마다 서버에서 위치 가져오기
+setInterval(async ()=>{
+
 try{
-const res=await fetch(SERVER+"/driver/location/1");
-const data=await res.json();
+const res = await fetch(`${SERVER}/driver/location/${ROUTE_ID}`);
+const data = await res.json();
 
-if(!data.latitude) return;
+if(!data || !data.latitude) return;
 
-const pos=new kakao.maps.LatLng(data.latitude,data.longitude);
+const pos = new kakao.maps.LatLng(data.latitude,data.longitude);
+
 marker.setPosition(pos);
 map.setCenter(pos);
 
 }catch(e){
-console.log("no data");
-}
+console.log("서버연결대기중");
 }
 
-setInterval(update,2000);
-update();
+},2000);
+
+});
 </script>
 
 </body>
