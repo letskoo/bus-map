@@ -28,11 +28,10 @@ script.onload = () => {
 
     async function fetchBus() {
       try {
-        // 🔥 Vercel 프록시 경유 (CORS 완전 차단 해결)
         const res = await fetch(`/api/location?routeId=${routeId}&t=${Date.now()}`)
         const data = await res.json()
 
-        if (!data || !data.latitude) return
+        if (!data?.latitude) return
 
         const pos = new kakao.maps.LatLng(Number(data.latitude), Number(data.longitude))
         marker.setPosition(pos)
