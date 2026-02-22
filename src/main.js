@@ -1,46 +1,54 @@
-let currentLat = null
-let currentLng = null
+import './style.css'
 
-function smoothMove(newLat, newLng){
-  if(currentLat === null){
-    currentLat = newLat
-    currentLng = newLng
+document.querySelector('#app').innerHTML = `
+<div style="padding:20px;font-size:22px;font-weight:bold">
+기사 GPS 송신 페이지
+</div>
+
+<button id="start" style="font-size:20px;padding:15px;margin:20px">
+운행 시작 (GPS 전송)
+</button>
+
+<div id="status" style="padding:20px;font-size:18px;color:green">
+대기중
+</div>
+`
+
+const SERVER="https://bus-server-production.up.railway.app"
+const ROUTE_ID=1
+
+let watchId=null
+
+document.getElementById("start").onclick=()=>{
+
+  if(!navigator.geolocation){
+    alert("GPS 안됨")
     return
   }
 
-  const steps = 20
-  let count = 0
+  document.getElementById("status").innerText="GPS 전송 시작됨"
 
-  const dLat = (newLat - currentLat)/steps
-  const dLng = (newLng - currentLng)/steps
+  watchId=navigator.geolocation.watchPosition(async(pos)=>{
 
-  const interval = setInterval(()=>{
-    currentLat += dLat
-    currentLng += dLng
+    const lat=pos.coords.latitude
+    const lng=pos.coords.longitude
 
-    const movePos = new kakao.maps.LatLng(currentLat,currentLng)
-    marker.setPosition(movePos)
-    map.panTo(movePos)
+    document.getElementById("status").innerText=
+    `전송중: ${lat.toFixed(5)}, ${lng.toFixed(5)}`
 
-    count++
-    if(count>=steps){
-      clearInterval(interval)
-      currentLat = newLat
-      currentLng = newLng
-    }
-  },50)
-}
+    await fetch(SERVER+"/driver/location",{
+      method:"POST",
+      headers:{ "Content-Type":"application/json"},
+      body:JSON.stringify({
+        routeId:ROUTE_ID,
+        lat,
+        lng
+      })
+    })
 
-async function fetchBus(){
-  try{
-    const res = await fetch(`/api/location?routeId=${routeId}&t=${Date.now()}`)
-    const data = await res.json()
-    if(!data?.latitude) return
-
-    const lat = Number(data.latitude)
-    const lng = Number(data.longitude)
-
-    smoothMove(lat,lng)
-
-  }catch(e){}
+  },{
+    enableHighAccuracy:true,
+    maximumAge:0,
+    timeout:5000
+  })
 }
