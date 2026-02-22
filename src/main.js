@@ -1,54 +1,98 @@
 import './style.css'
 
-document.querySelector('#app').innerHTML = `
-<div style="padding:20px;font-size:22px;font-weight:bold">
-기사 GPS 송신 페이지
-</div>
+const routeId = 1
+const KAKAO_KEY = '7760a4557ccbf1f9dd40e051124ba1fc'
 
-<button id="start" style="font-size:20px;padding:15px;margin:20px">
-운행 시작 (GPS 전송)
-</button>
+// 화면
+document.querySelector('#app').innerHTML = `<div id="map"></div>`
 
-<div id="status" style="padding:20px;font-size:18px;color:green">
-대기중
-</div>
-`
+// 카카오 SDK 로드
+const script = document.createElement('script')
+script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_KEY}&autoload=false`
+script.async = true
+script.defer = true
+document.head.appendChild(script)
 
-const SERVER="https://bus-server-production.up.railway.app"
-const ROUTE_ID=1
+script.onerror = () => {
+  console.log('카카오 SDK 로드 실패 (도메인/키 확인)')
+}
 
-let watchId=null
-
-document.getElementById("start").onclick=()=>{
-
-  if(!navigator.geolocation){
-    alert("GPS 안됨")
+script.onload = () => {
+  if (!window.kakao || !window.kakao.maps) {
+    console.log('카카오 SDK 객체 없음')
     return
   }
 
-  document.getElementById("status").innerText="GPS 전송 시작됨"
+  kakao.maps.load(() => {
+    const container = document.getElementById('map')
+    const options = {
+      center: new kakao.maps.LatLng(36.3550, 127.3880),
+      level: 5,
+    }
 
-  watchId=navigator.geolocation.watchPosition(async(pos)=>{
+    const map = new kakao.maps.Map(container, options)
+    const marker = new kakao.maps.Marker({ position: options.center })
+    marker.setMap(map)
 
-    const lat=pos.coords.latitude
-    const lng=pos.coords.longitude
+    // 부드러운 이동
+    let currentLat = null
+    let currentLng = null
+    let animTimer = null
 
-    document.getElementById("status").innerText=
-    `전송중: ${lat.toFixed(5)}, ${lng.toFixed(5)}`
+    function smoothMove(newLat, newLng) {
+      if (currentLat === null) {
+        currentLat = newLat
+        currentLng = newLng
+        const pos = new kakao.maps.LatLng(currentLat, currentLng)
+        marker.setPosition(pos)
+        map.panTo(pos)
+        return
+      }
 
-    await fetch(SERVER+"/driver/location",{
-      method:"POST",
-      headers:{ "Content-Type":"application/json"},
-      body:JSON.stringify({
-        routeId:ROUTE_ID,
-        lat,
-        lng
-      })
-    })
+      if (animTimer) clearInterval(animTimer)
 
-  },{
-    enableHighAccuracy:true,
-    maximumAge:0,
-    timeout:5000
+      const steps = 15
+      let count = 0
+      const startLat = currentLat
+      const startLng = currentLng
+      const dLat = (newLat - startLat) / steps
+      const dLng = (newLng - startLng) / steps
+
+      animTimer = setInterval(() => {
+        currentLat += dLat
+        currentLng += dLng
+
+        const pos = new kakao.maps.LatLng(currentLat, currentLng)
+        marker.setPosition(pos)
+        map.panTo(pos)
+
+        count++
+        if (count >= steps) {
+          clearInterval(animTimer)
+          animTimer = null
+          currentLat = newLat
+          currentLng = newLng
+        }
+      }, 80)
+    }
+
+    async function fetchBus() {
+      try {
+        const res = await fetch(`/api/location?routeId=${routeId}&t=${Date.now()}`, { cache: 'no-store' })
+        const data = await res.json()
+        if (!data?.latitude) return
+
+        const lat = Number(data.latitude)
+        const lng = Number(data.longitude)
+        if (Number.isNaN(lat) || Number.isNaN(lng)) return
+
+        smoothMove(lat, lng)
+      } catch (e) {
+        // 조용히
+      }
+    }
+
+    fetchBus()
+    setInterval(fetchBus, 2000)
   })
 }
