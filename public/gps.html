@@ -14,8 +14,6 @@ button{font-size:20px;padding:20px 40px;margin-top:20px;border-radius:12px;borde
 <body>
 
 <h1>🚍 기사 GPS 전송</h1>
-<div>운행 시작 누르면 실시간 전송</div>
-
 <button onclick="startGps()">운행 시작</button>
 <button onclick="stopGps()" style="background:#d50000;">정지</button>
 
@@ -25,29 +23,22 @@ button{font-size:20px;padding:20px 40px;margin-top:20px;border-radius:12px;borde
 const SERVER = "https://bus-server-production.up.railway.app";
 const ROUTE_ID = 2;
 
-let watchId=null;
+let timer=null;
 
 function log(t){
  document.getElementById("status").innerText=t;
  console.log(t);
 }
 
-function startGps(){
- if(!navigator.geolocation){
-   log("GPS 안됨");
-   return;
- }
-
- log("GPS 시작");
-
- watchId = navigator.geolocation.watchPosition(async(pos)=>{
+function sendGps(){
+ navigator.geolocation.getCurrentPosition(async(pos)=>{
    const lat=pos.coords.latitude;
    const lng=pos.coords.longitude;
 
    log("좌표\n"+lat+"\n"+lng+"\n전송중");
 
    try{
-     const res = await fetch(SERVER+"/driver/location",{
+     await fetch(SERVER+"/driver/location",{
        method:"POST",
        headers:{
          "Content-Type":"application/json"
@@ -59,26 +50,29 @@ function startGps(){
        })
      });
 
-     const t = await res.text();
-     log("전송완료\n"+lat+"\n"+lng+"\n"+t);
+     log("전송완료\n"+lat+"\n"+lng);
 
    }catch(e){
      log("전송실패 "+e);
    }
 
+ },(err)=>{
+   log("GPS 오류 "+err.message);
  },{
    enableHighAccuracy:true,
-   maximumAge:0,
    timeout:10000
- },
- (err)=>{
-   log("GPS 오류 "+err.message);
  });
 }
 
+function startGps(){
+ log("GPS 시작");
+ sendGps();
+ timer = setInterval(sendGps,5000);
+}
+
 function stopGps(){
- if(watchId){
-   navigator.geolocation.clearWatch(watchId);
+ if(timer){
+   clearInterval(timer);
    log("정지");
  }
 }

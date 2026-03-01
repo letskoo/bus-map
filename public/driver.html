@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>버스 기사 운행앱</title>
+
+<style>
+body{
+ font-family:sans-serif;
+ text-align:center;
+ padding:30px;
+ background:#0d0d0d;
+ color:white;
+}
+
+h2{margin-bottom:10px;}
+
+button{
+ width:90%;
+ max-width:420px;
+ font-size:22px;
+ padding:22px;
+ margin:10px;
+ border-radius:16px;
+ border:none;
+}
+
+.start{background:#00c853;color:white;}
+.stop{background:#d50000;color:white;}
+
+#status{
+ margin-top:25px;
+ font-size:15px;
+ color:#00e676;
+ white-space:pre-line;
+}
+
+.warn{
+ margin-top:20px;
+ color:#ff5252;
+ font-size:14px;
+}
+</style>
+</head>
+<body>
+
+<h2>🚍 학원버스 기사앱</h2>
+
+<button class="start" onclick="startDrive()">운행 시작</button>
+<button class="stop" onclick="stopDrive()">운행 종료</button>
+
+<div id="status">대기중</div>
+
+<div class="warn">
+※ 화면 꺼지면 GPS 멈출 수 있음<br>
+※ 충전 상태 유지 권장<br>
+※ 앱 화면 켜둔 상태 유지
+</div>
+
+<script>
+const SERVER="https://bus-server-production.up.railway.app";
+
+let ROUTE_ID=null;
+let timer=null;
+let sending=false;
+
+// routeId 자동 인식
+const url=new URL(location.href);
+ROUTE_ID=url.searchParams.get("routeId");
+
+if(!ROUTE_ID){
+ ROUTE_ID=prompt("노선번호 입력");
+}
+
+function log(t){
+ document.getElementById("status").innerText=t;
+ console.log(t);
+}
+
+// ===== 운행 시작 =====
+async function startDrive(){
+
+ log("운행 시작 요청중...");
+
+ try{
+  await fetch(SERVER+"/driver/start",{
+   method:"POST",
+   headers:{"Content-Type":"application/json"},
+   body:JSON.stringify({routeId:Number(ROUTE_ID)})
+  });
+
+  log("운행 시작됨\nGPS 연결중");
+
+  startGps();
+
+ }catch(e){
+  log("시작 실패 "+e);
+ }
+}
+
+// ===== 운행 종료 =====
+async function stopDrive(){
+
+ log("운행 종료 요청중...");
+
+ try{
+  if(timer) clearInterval(timer);
+
+  await fetch(SERVER+"/driver/stop",{
+   method:"POST",
+   headers:{"Content-Type":"application/json"},
+   body:JSON.stringify({routeId:Number(ROUTE_ID)})
+  });
+
+  log("운행 종료됨");
+
+ }catch(e){
+  log("종료 실패 "+e);
+ }
+}
+
+// ===== GPS 전송 =====
+function sendGps(){
+
+ if(sending) return;
+ sending=true;
+
+ navigator.geolocation.getCurrentPosition(async(pos)=>{
+
+   const lat=pos.coords.latitude;
+   const lng=pos.coords.longitude;
+
+   try{
+     await fetch(SERVER+"/driver/location",{
+       method:"POST",
+       headers:{"Content-Type":"application/json"},
+       body:JSON.stringify({
+         routeId:Number(ROUTE_ID),
+         lat:lat,
+         lng:lng
+       })
+     });
+
+     log(
+       "🟢 GPS 전송중\n"+
+       lat+"\n"+lng+"\n"+
+       new Date().toLocaleTimeString()
+     );
+
+   }catch(e){
+     log("🔴 전송 실패\n네트워크 확인");
+   }
+
+   sending=false;
+
+ },(err)=>{
+   log("GPS 오류\n"+err.message);
+   sending=false;
+ },{
+   enableHighAccuracy:true,
+   timeout:15000
+ });
+}
+
+function startGps(){
+ sendGps();
+ timer=setInterval(sendGps,5000);
+}
+
+// ===== 페이지 떠날때 자동정지 방지 =====
+window.onbeforeunload=function(){
+ return "앱을 종료하면 GPS 전송이 중단됩니다";
+}
+</script>
+
+</body>
+</html>
