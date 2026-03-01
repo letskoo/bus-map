@@ -1,33 +1,15 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>기사 GPS 전송</title>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>기사 GPS 전송</title>
 
-  <style>
-    body{
-      font-family: sans-serif;
-      text-align:center;
-      padding:40px;
-      background:#111;
-      color:#fff;
-    }
-    button{
-      font-size:20px;
-      padding:20px 40px;
-      margin-top:20px;
-      border-radius:12px;
-      border:none;
-      background:#00c853;
-      color:white;
-    }
-    #status{
-      margin-top:30px;
-      font-size:18px;
-      color:#00e676;
-    }
-  </style>
+<style>
+body{font-family:sans-serif;text-align:center;padding:40px;background:#111;color:#fff;}
+button{font-size:20px;padding:20px 40px;margin-top:20px;border-radius:12px;border:none;background:#00c853;color:white;}
+#status{margin-top:30px;font-size:18px;color:#00e676;}
+</style>
 </head>
 <body>
 
@@ -41,53 +23,52 @@
 
 <script>
 const SERVER = "https://bus-server-production.up.railway.app";
-const DRIVER_TOKEN = "HiXJVU81LrfKjOftqGuGaCTUK65KTCDA";  // ← 너 토큰 넣어
+const DRIVER_TOKEN = "HiXJVU81LrfKjOftqGuGaCTUK65KTCDA";
 
-let watchId = null;
+let watchId=null;
 
 function startGps(){
-  if(!navigator.geolocation){
-    alert("GPS 지원 안됨");
-    return;
-  }
+ if(!navigator.geolocation){
+   alert("GPS 안됨");
+   return;
+ }
 
-  document.getElementById("status").innerText="GPS 시작...";
+ document.getElementById("status").innerText="GPS 시작";
 
-  watchId = navigator.geolocation.watchPosition(async (pos)=>{
-    const lat = pos.coords.latitude;
-    const lng = pos.coords.longitude;
+ watchId = navigator.geolocation.watchPosition(async(pos)=>{
+   const lat=pos.coords.latitude;
+   const lng=pos.coords.longitude;
 
-    document.getElementById("status").innerText =
-      "전송중: "+lat+" , "+lng;
+   document.getElementById("status").innerText="전송중 "+lat+" "+lng;
 
-    try{
-      await fetch(SERVER+"/driver/location",{
-        method:"POST",
-        headers:{
-          "Content-Type":"application/json",
-          "Authorization":"Bearer "+DRIVER_TOKEN
-        },
-        body:JSON.stringify({
-          latitude:lat,
-          longitude:lng
-        })
-      });
-    }catch(e){
-      document.getElementById("status").innerText="전송 실패";
-    }
+   try{
+     await fetch(SERVER+"/driver/location",{
+       method:"POST",
+       headers:{
+         "Content-Type":"application/json",
+         "x-driver-token":DRIVER_TOKEN
+       },
+       body:JSON.stringify({
+         latitude:lat,
+         longitude:lng
+       })
+     });
+   }catch(e){
+     document.getElementById("status").innerText="전송실패";
+   }
 
-  },{
-    enableHighAccuracy:true,
-    maximumAge:0,
-    timeout:5000
-  });
+ },{
+   enableHighAccuracy:true,
+   maximumAge:0,
+   timeout:5000
+ });
 }
 
 function stopGps(){
-  if(watchId){
-    navigator.geolocation.clearWatch(watchId);
-    document.getElementById("status").innerText="정지됨";
-  }
+ if(watchId){
+   navigator.geolocation.clearWatch(watchId);
+   document.getElementById("status").innerText="정지";
+ }
 }
 </script>
 
