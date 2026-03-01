@@ -8,13 +8,13 @@
 <style>
 body{font-family:sans-serif;text-align:center;padding:40px;background:#111;color:#fff;}
 button{font-size:20px;padding:20px 40px;margin-top:20px;border-radius:12px;border:none;background:#00c853;color:white;}
-#status{margin-top:30px;font-size:18px;color:#00e676;}
+#status{margin-top:30px;font-size:18px;color:#00e676;white-space:pre-line;}
 </style>
 </head>
 <body>
 
 <h1>🚍 기사 GPS 전송</h1>
-<div>운행 시작 누르면 5초마다 위치 전송됨</div>
+<div>운행 시작 누르면 실시간 전송</div>
 
 <button onclick="startGps()">운행 시작</button>
 <button onclick="stopGps()" style="background:#d50000;">정지</button>
@@ -23,51 +23,63 @@ button{font-size:20px;padding:20px 40px;margin-top:20px;border-radius:12px;borde
 
 <script>
 const SERVER = "https://bus-server-production.up.railway.app";
-const DRIVER_TOKEN = "HiXJVU81LrfKjOftqGuGaCTUK65KTCDA";
+const ROUTE_ID = 2;
 
 let watchId=null;
 
+function log(t){
+ document.getElementById("status").innerText=t;
+ console.log(t);
+}
+
 function startGps(){
  if(!navigator.geolocation){
-   alert("GPS 안됨");
+   log("GPS 안됨");
    return;
  }
 
- document.getElementById("status").innerText="GPS 시작";
+ log("GPS 시작");
 
  watchId = navigator.geolocation.watchPosition(async(pos)=>{
    const lat=pos.coords.latitude;
    const lng=pos.coords.longitude;
 
-   document.getElementById("status").innerText="전송중 "+lat+" "+lng;
+   log("좌표\n"+lat+"\n"+lng+"\n전송중");
 
    try{
-     await fetch(SERVER+"/driver/location",{
+     const res = await fetch(SERVER+"/driver/location",{
        method:"POST",
        headers:{
-         "Content-Type":"application/json",
-         "x-driver-token":DRIVER_TOKEN
+         "Content-Type":"application/json"
        },
        body:JSON.stringify({
+         routeId:ROUTE_ID,
          latitude:lat,
          longitude:lng
        })
      });
+
+     const t = await res.text();
+     log("전송완료\n"+lat+"\n"+lng+"\n"+t);
+
    }catch(e){
-     document.getElementById("status").innerText="전송실패";
+     log("전송실패 "+e);
    }
 
  },{
    enableHighAccuracy:true,
    maximumAge:0,
-   timeout:5000
+   timeout:10000
+ },
+ (err)=>{
+   log("GPS 오류 "+err.message);
  });
 }
 
 function stopGps(){
  if(watchId){
    navigator.geolocation.clearWatch(watchId);
-   document.getElementById("status").innerText="정지";
+   log("정지");
  }
 }
 </script>
